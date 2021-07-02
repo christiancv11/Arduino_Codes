@@ -48,10 +48,12 @@ char DiaSemana[][4] = {"Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab" };
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Se define el pin de dirección (dir) como el 9 y el pin de paso (stp) como el 8.
-//Se define pasos por revolución (stepsPerRevolution) 200 son una revolución completa.
 #define dirPin 9
 #define stepPin 8
+
+//Se define pasos por revolución (stepsPerRevolution) 200 son una revolución completa.
 #define stepsPerRevolution 200
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -63,7 +65,6 @@ char DiaSemana[][4] = {"Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab" };
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Definición del pin que activa la voz en el módulo ISD1829 como el pin 5.
-
 int P_E = 5; 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -76,11 +77,9 @@ int P_E = 5;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Definición del pin que activa el motor como el pin 3.
-
 int ControlPin = 3;   
 
 // Definición de la velocidad del motor.
-
 int velMotor = 15;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -93,11 +92,9 @@ int velMotor = 15;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Definición del pin que activa el led verde.
-
 int ledVerde = 7;   
 
 // Definición del pin que activa el led rojo.
-
 int ledRojo = 6;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -215,16 +212,16 @@ void loop ()
       digitalWrite(ControlPin, LOW);  // Apaga el motor DC del tornillo. 
       delay(5000);// Tiempo de espera para que pase al siguiente bloque de órdenes. 
       
-      digitalWrite(7, LOW);//Apaga el led verde.
-      digitalWrite(6, LOW);//Apaga el led rojo.
+      digitalWrite(ledVerde, LOW);//Apaga el led verde.
+      digitalWrite(ledRojo, LOW);//Apaga el led rojo.
       digitalWrite(P_E, LOW);//Apaga el parlante.
       digitalWrite(ControlPin, LOW);//Apaga el motor DC del tornillo.
       delay(5000);
             
     }else{//Bloque de órdenes que se ejecutan en caso de que no se cumpla la condición inicial (de la hora elegida)
 
-           digitalWrite(7, LOW);//Apaga el led verde.
-           digitalWrite(6, LOW);//Apaga el led rojo.
+           digitalWrite(ledVerde, LOW);//Apaga el led verde.
+           digitalWrite(ledRojo, LOW);//Apaga el led rojo.
            digitalWrite(P_E, LOW);//Apaga el parlante.
            digitalWrite(ControlPin, LOW);//Apaga el motor DC del tornillo.    
          }
