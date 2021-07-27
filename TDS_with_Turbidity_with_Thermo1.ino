@@ -1,0 +1,227 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//// Código para un monitor de calidad del agua para evaluar el funcionamiento de un purificador que consiste en                       //////////////
+//// un filtro casero (compuesto por grava, arena fina, algodón y carbón activado) e irradiación de luz ultravioleta.                  //////////////
+//// El monitor tiene un sensor de turbidez, uno de conductividad - TDS, y uno de temperatura. Tiene también un LCD que indica         //////////////
+//// la medida y el valor óptimo. Además, consta de un conjunto de leds que indican que se está tomando cada variable en el ciclo      //////////////
+//// acompañado de un led rojo que indica si el valor es peligroso para el consumo humano. Se tiene un led amarillo para la turbidez,  //////////////
+//// un led azul para la conductividad, y un led verde para la temperatura.                                                            //////////////
+//// Elaborado por Christian David para Creatvra en el marco del proyecto .                                                            //////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//dar permisos desde Linux sudo chmod a+rw /dev/ttyACM0
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//// Librerías
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////
+////////////////// Librerías para el TDS //////////////////////////////
+///////////////////////////////////////////////////////////////////////
+#include <EEPROM.h>
+#include "GravityTDS.h"
+
+/////////////////////////////////////////////////////////////////////////////////////
+////////////////// Librerías para el de turbidez y LCD //////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
+
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>    //https://github.com/fdebrabander/Arduino-LiquidCrystal-I2C-library
+LiquidCrystal_I2C lcd(0x27, 20, 4);
+
+///////////////////////////////////////////////////////////////////////
+////////////////// Librerías para el MAX6675 //////////////////////////////
+///////////////////////////////////////////////////////////////////////
+
+#include "max6675.h" 
+
+///////////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////
+////////////////// Constantes para el TDS ///////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+#define TdsSensorPin A1
+GravityTDS gravityTds;
+int led_azul = 4;
+int led_rojo_tds = 5;
+
+float temperature = 25,tdsValue = 0;
+
+/////////////////////////////////////////////////////////////////////////////////
+////////////////// Constantes para el de turbidez ///////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////
+
+int sensorPin = A0;
+float volt;
+float ntu;
+int led_amarillo = 2;
+int led_rojo_tur = 3;
+
+
+/////////////////////////////////////////////////////////////////////////////////
+////////////////// Constantes para la termocupla ///////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////
+
+int ktcSO = 8;
+int ktcCS = 9;
+int ktcCLK = 10;
+int led_verde = 6;
+
+MAX6675 ktc(ktcCLK, ktcCS, ktcSO);
+/////////////////////////////////////////////////////////////////////////////////
+
+void setup()
+{
+    Serial.begin(115200);
+    /////////////////////////////////////////////////////////////////////////
+    ////////////////// Setup para el TDS ////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////
+    gravityTds.setPin(TdsSensorPin);
+    gravityTds.setAref(5.0);  //reference voltage on ADC, default 5.0V on Arduino UNO
+    gravityTds.setAdcRange(1024);  //1024 for 10bit ADC;4096 for 12bit ADC
+    gravityTds.begin();  //initialization
+
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+    ////////////////// Setup para el de turbidez y LCD ////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////
+    lcd.init();
+    lcd.backlight();
+    lcd.setCursor(0,0);
+    lcd.print("Monitor Calidad de");
+    lcd.setCursor(4,1);
+    lcd.print("Agua");
+    lcd.setCursor(0,2);
+    lcd.print("Creatvra - Ipiales");
+    delay(7000);
+
+   
+}
+
+void loop()
+{
+    ///////////////////////////////////////////////////////////////////////////////////////
+    ////////////////// Loop para el de turbidez y LCD ////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////
+    volt = 0;
+    for(int i=0; i<800; i++)
+    {
+        volt += ((float)analogRead(sensorPin)/1023)*5;
+    }
+    volt = volt/800;
+    volt = round_to_dp(volt,2);
+    if(volt < 2.5){
+      ntu = 3000;
+    }else{
+      ntu = -(1120.4*volt*volt)+(5742.3*volt)-4353.9; //Fórmula que da el fabricante para establecer la relación entre voltaje y turbidez.
+    }
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Turbidez:");
+    lcd.setCursor(0,1);
+    lcd.print(volt);
+    lcd.print(" V");
+ 
+    lcd.setCursor(0,2);
+    lcd.print(ntu);
+    lcd.print(" NTU");
+
+    lcd.setCursor(0,3);
+    lcd.print("Val. Op. < 1 NTU");
+    
+    digitalWrite(led_amarillo, HIGH);
+    digitalWrite(led_rojo_tur, LOW);
+
+    digitalWrite(led_azul, LOW);
+    digitalWrite(led_rojo_tds, LOW);
+
+    digitalWrite(led_verde, LOW);
+
+    if(ntu > 1) //Condición para encender el led rojo que indica que se ha superado el valor óptimo para el consumo.
+       {
+        digitalWrite(led_amarillo, HIGH);
+        digitalWrite(led_rojo_tur, HIGH);
+
+        digitalWrite(led_azul, LOW);
+        digitalWrite(led_rojo_tds, LOW);
+
+        digitalWrite(led_verde, LOW);
+       }
+    delay(10000);
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+    ////////////////// Loop para el TDS ////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////
+
+    //temperature = readTemperature();  //add your temperature sensor and read it
+    gravityTds.setTemperature(temperature);  // set the temperature and execute temperature compensation
+    gravityTds.update();  //sample and calculate
+    tdsValue = gravityTds.getTdsValue();  // then get the value
+    Serial.print(tdsValue,0);
+    Serial.println("ppm");
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Conductividad:");
+    lcd.setCursor(0,1);
+    lcd.print(tdsValue,0);
+    lcd.print("ppm");
+
+    lcd.setCursor(0,2);
+    lcd.print("Val. Op. < 300");
+
+    digitalWrite(led_amarillo, LOW);
+    digitalWrite(led_rojo_tur, LOW);
+
+    digitalWrite(led_azul, HIGH);
+    digitalWrite(led_rojo_tds, LOW);
+
+    digitalWrite(led_verde, LOW);
+
+    if(tdsValue > 300) //Condición para encender el led rojo que indica que se ha superado el valor óptimo para el consumo.
+       {
+        digitalWrite(led_amarillo, LOW);
+        digitalWrite(led_rojo_tur, LOW);
+
+        digitalWrite(led_azul, HIGH);
+        digitalWrite(led_rojo_tds, HIGH);
+
+        digitalWrite(led_verde, LOW);
+       }
+    delay(10000);
+
+    /////////////////////////////////////////////////////////////////////////////////
+    ////////////////// Loop para la termocupla ///////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////
+
+    // LEER EL TERMOPAR Y ALMACENAR EL VALOR EN UNA VARIABLE
+    double t = ktc.readCelsius();
+    // IMPRIMIR LA TEMPERATURA EN LA TERMINAL SERIAL
+    Serial.print("C = ");
+    Serial.println(t);
+
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Temperatura:");
+    lcd.setCursor(0,1);
+    lcd.print(t);
+    lcd.print((char)223);lcd.print("C");
+
+    digitalWrite(led_amarillo, LOW);
+    digitalWrite(led_rojo_tur, LOW);
+
+    digitalWrite(led_azul, LOW);
+    digitalWrite(led_rojo_tds, LOW);
+
+    digitalWrite(led_verde, HIGH);
+    delay(10000);
+}
+
+float round_to_dp( float in_value, int decimal_place )
+{
+  float multiplier = powf( 10.0f, decimal_place );
+  in_value = roundf( in_value * multiplier ) / multiplier;
+  return in_value;
+}
