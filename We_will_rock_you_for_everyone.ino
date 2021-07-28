@@ -7,6 +7,8 @@
 /// Código elavorado por Christian David para Creatvra el 28/07/2021.                           //////////////
 /// La acomodación de las señales lumínicas puede encontrarse en:                               //////////////
 /// https://drive.google.com/file/d/1qXQ-SxBZsPOYnPcsFeeUkCrVxUeDEv0H/view?usp=sharing          //////////////
+/// La clave rítmica es:                                                                        //////////////
+/// https://drive.google.com/file/d/1Uf0K_BfmTdbCW1EqUZ8_NRrHLgs1Kv2B/view?usp=sharing          //////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////  
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
